@@ -148,18 +148,22 @@ async def websocket_endpoint(ws: WebSocket):
 
 # ---- Entry point ----
 if __name__ == "__main__":
+    import threading
     no_telegram = "--no-telegram" in sys.argv
 
-    async def _main():
-        server = uvicorn.Server(uvicorn.Config(
-            app, host=config.backend_host, port=config.backend_port,
-            log_level="warning",
-        ))
-        tasks = [server.serve()]
-        if not no_telegram and config.telegram_bot_token:
+    # Telegram's run_polling() manages its own event loop and conflicts with
+    # uvicorn's loop when gathered together. Run it in a dedicated thread instead.
+    if not no_telegram and config.telegram_bot_token:
+        def _run_telegram():
+            import asyncio as _asyncio
             from delivery.telegram_bot import start_telegram_bot
-            tasks.append(start_telegram_bot(config, agent_manager))
-        await asyncio.gather(*tasks)
+            loop = _asyncio.new_event_loop()
+            _asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(start_telegram_bot(config, agent_manager))
+            finally:
+                loop.close()
+        threading.Thread(target=_run_telegram, daemon=True).start()
 
     logger.info(f"OpenClawFactory backend starting on port {config.backend_port}")
-    asyncio.run(_main())
+    uvicorn.run(app, host=config.backend_host, port=config.backend_port, log_level="warning")
