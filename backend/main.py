@@ -43,7 +43,9 @@ logger = logging.getLogger(__name__)
 config = load_config()
 agent_manager = AgentManager(config)
 
-app = FastAPI(title="OpenClawFactory API", version="1.0")
+APP_VERSION = "0.33"
+
+app = FastAPI(title="OpenClawFactory API", version=APP_VERSION)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -100,6 +102,10 @@ state.set_broadcast(_sync_broadcast)
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+@app.get("/api/version")
+def version():
+    return {"version": APP_VERSION}
 
 @app.get("/api/agents")
 def get_agents():
