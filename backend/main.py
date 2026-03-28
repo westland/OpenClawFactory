@@ -76,12 +76,20 @@ class ConnectionManager:
 
 ws_manager = ConnectionManager()
 
+# Store the event loop once uvicorn starts so agent threads can post to it.
+_event_loop: asyncio.AbstractEventLoop | None = None
+
+@app.on_event("startup")
+async def _capture_loop():
+    global _event_loop
+    _event_loop = asyncio.get_running_loop()
+
 def _sync_broadcast(event: dict):
     """Called from agent threads — schedules a coroutine on the event loop."""
+    if _event_loop is None or not _event_loop.is_running():
+        return
     try:
-        loop = asyncio.get_event_loop()
-        if loop.is_running():
-            asyncio.run_coroutine_threadsafe(ws_manager.broadcast(event), loop)
+        asyncio.run_coroutine_threadsafe(ws_manager.broadcast(event), _event_loop)
     except Exception as e:
         logger.debug(f"Broadcast skipped: {e}")
 
