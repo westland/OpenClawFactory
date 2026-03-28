@@ -64,7 +64,7 @@ export function useFactory() {
           break
         }
         case 'task_created': {
-          const t = event.data as Task
+          const t = event.data as unknown as Task
           setTasks(prev => [t, ...prev].slice(0, 50))
           addLog(`New task: ${t.title} → ${t.agent_name}`)
           break
