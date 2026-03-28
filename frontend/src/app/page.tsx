@@ -10,6 +10,7 @@ export default function FactoryPage() {
   const { agents, tasks, connected, log, assignTask } = useFactory()
   const [activeTab, setActiveTab] = useState<'floor' | 'tasks' | 'log'>('floor')
   const [selectedTask, setSelectedTask] = useState<string | null>(null)
+  const [hiddenIds, setHiddenIds] = useState<Set<string>>(new Set())
 
   // Group agents by stage
   const byStage = STAGE_ORDER.reduce((acc, s) => {
@@ -143,13 +144,26 @@ export default function FactoryPage() {
                     <th className="text-left px-3 py-2">Agent</th>
                     <th className="text-left px-3 py-2">Status</th>
                     <th className="text-left px-3 py-2">Time</th>
+                    <th className="px-3 py-2 text-right">
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/tasks', { method: 'DELETE' })
+                          const done = new Set(tasks.filter(t => t.status === 'completed' || t.status === 'failed').map(t => t.id))
+                          setHiddenIds(done)
+                          setSelectedTask(null)
+                        }}
+                        className="text-slate-600 hover:text-red-400 transition-colors text-[10px] uppercase tracking-widest"
+                      >
+                        Clear done
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {tasks.length === 0 && (
                     <tr><td colSpan={4} className="px-3 py-4 text-slate-600 text-center">No tasks yet</td></tr>
                   )}
-                  {tasks.map(t => (
+                  {tasks.filter(t => !hiddenIds.has(t.id)).map(t => (
                     <tr
                       key={t.id}
                       onClick={() => setSelectedTask(selectedTask === t.id ? null : t.id)}

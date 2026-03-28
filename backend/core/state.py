@@ -141,6 +141,18 @@ class StateManager:
         ).fetchall()
         return [dict(r) for r in rows]
 
+    def clear_tasks(self, statuses: list[str] | None = None) -> int:
+        """Delete tasks by status. Defaults to completed + failed."""
+        if statuses is None:
+            statuses = ["completed", "failed"]
+        placeholders = ",".join("?" * len(statuses))
+        with self._lock:
+            cur = self._conn.execute(
+                f"DELETE FROM tasks WHERE status IN ({placeholders})", statuses
+            )
+            self._conn.commit()
+        return cur.rowcount
+
     def get_task(self, task_id: str) -> dict | None:
         row = self._conn.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
         return dict(row) if row else None

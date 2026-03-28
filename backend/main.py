@@ -109,6 +109,11 @@ def get_agents():
 def get_tasks(limit: int = 20):
     return {"tasks": state.get_tasks(limit)}
 
+@app.delete("/api/tasks")
+def clear_tasks():
+    deleted = state.clear_tasks()
+    return {"deleted": deleted}
+
 @app.get("/api/tasks/{task_id}")
 def get_task(task_id: str):
     task = state.get_task(task_id)
