@@ -105,11 +105,14 @@ class AgentRunner:
 
             interp.llm.model = f"anthropic/{self.persona.model}"
             interp.llm.api_key = self.config.anthropic_api_key
+            interp.llm.context_window = 8000   # keep well under 30k/min rate limit
+            interp.llm.max_tokens = 1024
             interp.system_message = _get_system_prompt(
                 self.persona.role, self.name, task_title
             )
             interp.auto_run = True        # runs code without asking
             interp.verbose = False
+            interp.conversation_history = False  # don't accumulate across tasks
 
             prompt = task_title
             if task_description:
