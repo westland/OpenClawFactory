@@ -79,14 +79,11 @@ info "Installing Python dependencies (this takes a few minutes)..."
 pip install -r backend/requirements.txt -q
 info "Python backend dependencies installed."
 
-# ---- Step 4: Frontend dependencies + build ----
+# ---- Step 4: Frontend npm install (build deferred until after .env is ready) ----
 info "Installing Node.js dependencies..."
 cd "$INSTALL_DIR/frontend"
 npm install --silent
-info "Building Next.js dashboard..."
-npm run build
 cd "$INSTALL_DIR"
-info "Frontend build complete."
 
 # ---- Step 5: Configure .env ----
 if [[ -f .env ]]; then
@@ -138,6 +135,15 @@ chmod 600 .env
 SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
 sed -i "s|http://localhost:8000|http://$SERVER_IP:8000|g" .env
 sed -i "s|ws://localhost:8000|ws://$SERVER_IP:8000|g" .env
+
+# ---- Step 6b: Build Next.js dashboard (after .env has real server IP) ----
+info "Building Next.js dashboard..."
+cd "$INSTALL_DIR/frontend"
+# Export NEXT_PUBLIC vars so they are baked into the build
+set -a; source "$INSTALL_DIR/.env"; set +a
+npm run build
+cd "$INSTALL_DIR"
+info "Frontend build complete."
 
 # ---- Step 7: Nginx ----
 info "Configuring Nginx reverse proxy..."
