@@ -9,6 +9,7 @@ import type { Stage } from '@/lib/types'
 export default function FactoryPage() {
   const { agents, tasks, connected, log, assignTask } = useFactory()
   const [activeTab, setActiveTab] = useState<'floor' | 'tasks' | 'log'>('floor')
+  const [selectedTask, setSelectedTask] = useState<string | null>(null)
 
   // Group agents by stage
   const byStage = STAGE_ORDER.reduce((acc, s) => {
@@ -133,43 +134,67 @@ export default function FactoryPage() {
 
         {/* ── TASKS ── */}
         {activeTab === 'tasks' && (
-          <div className="rounded-lg border border-factory-border bg-factory-panel overflow-hidden">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-factory-border text-slate-600 uppercase tracking-widest">
-                  <th className="text-left px-3 py-2">Task</th>
-                  <th className="text-left px-3 py-2">Agent</th>
-                  <th className="text-left px-3 py-2">Stage</th>
-                  <th className="text-left px-3 py-2">Status</th>
-                  <th className="text-left px-3 py-2">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tasks.length === 0 && (
-                  <tr><td colSpan={5} className="px-3 py-4 text-slate-600 text-center">No tasks yet</td></tr>
-                )}
-                {tasks.map(t => (
-                  <tr key={t.id} className="border-b border-factory-border hover:bg-white/5">
-                    <td className="px-3 py-2 text-white max-w-[260px] truncate">{t.title}</td>
-                    <td className="px-3 py-2" style={{ color: agentColor(t.agent_name) }}>{t.agent_name}</td>
-                    <td className="px-3 py-2 text-slate-400">{t.stage}</td>
-                    <td className="px-3 py-2">
-                      <span className={{
-                        pending: 'text-slate-500',
-                        running: 'text-factory-accent',
-                        completed: 'text-factory-green',
-                        failed: 'text-red-400',
-                      }[t.status]}>
-                        {t.status.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-slate-600">
-                      {new Date(t.created_at).toLocaleTimeString()}
-                    </td>
+          <div className="flex flex-col gap-3 overflow-y-auto flex-1">
+            <div className="rounded-lg border border-factory-border bg-factory-panel overflow-hidden">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-factory-border text-slate-600 uppercase tracking-widest">
+                    <th className="text-left px-3 py-2">Task</th>
+                    <th className="text-left px-3 py-2">Agent</th>
+                    <th className="text-left px-3 py-2">Status</th>
+                    <th className="text-left px-3 py-2">Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {tasks.length === 0 && (
+                    <tr><td colSpan={4} className="px-3 py-4 text-slate-600 text-center">No tasks yet</td></tr>
+                  )}
+                  {tasks.map(t => (
+                    <tr
+                      key={t.id}
+                      onClick={() => setSelectedTask(selectedTask === t.id ? null : t.id)}
+                      className="border-b border-factory-border hover:bg-white/5 cursor-pointer"
+                    >
+                      <td className="px-3 py-2 text-white max-w-[260px] truncate">{t.title}</td>
+                      <td className="px-3 py-2" style={{ color: agentColor(t.agent_name) }}>{t.agent_name}</td>
+                      <td className="px-3 py-2">
+                        <span className={{
+                          pending: 'text-slate-500',
+                          running: 'text-factory-accent',
+                          completed: 'text-factory-green',
+                          failed: 'text-red-400',
+                        }[t.status]}>
+                          {t.status.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-slate-600">
+                        {new Date(t.created_at).toLocaleTimeString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Result panel — shown when a task row is clicked */}
+            {selectedTask && (() => {
+              const t = tasks.find(t => t.id === selectedTask)
+              if (!t) return null
+              return (
+                <div className="rounded-lg border border-factory-border bg-factory-panel p-4 font-mono text-xs text-slate-300 whitespace-pre-wrap overflow-y-auto max-h-96">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-factory-accent font-bold uppercase tracking-widest text-[10px]">
+                      {t.title}
+                    </span>
+                    <button onClick={() => setSelectedTask(null)} className="text-slate-600 hover:text-slate-400">✕</button>
+                  </div>
+                  {t.result
+                    ? t.result
+                    : <span className="text-slate-600">{t.status === 'running' ? 'Working…' : 'No output yet.'}</span>
+                  }
+                </div>
+              )
+            })()}
           </div>
         )}
 
