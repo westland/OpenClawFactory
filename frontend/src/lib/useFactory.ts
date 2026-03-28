@@ -2,8 +2,14 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AgentState, Task, WSEvent } from './types'
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws'
-const API_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
+// Derive WebSocket URL from the current page's host so it works behind any proxy
+function getWsUrl() {
+  if (typeof window === 'undefined') return 'ws://localhost:8000/ws'
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws'
+  return `${proto}://${window.location.host}/ws`
+}
+// Use relative path so API calls go through Nginx — no env vars needed
+const API_URL = ''
 
 export function useFactory() {
   const [agents, setAgents] = useState<AgentState[]>([])
@@ -19,7 +25,7 @@ export function useFactory() {
     let reconnectTimer: ReturnType<typeof setTimeout>
 
     function connect() {
-      const ws = new WebSocket(WS_URL)
+      const ws = new WebSocket(getWsUrl())
       wsRef.current = ws
 
       ws.onopen = () => {
