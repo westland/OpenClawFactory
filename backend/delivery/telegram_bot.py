@@ -90,7 +90,15 @@ async def start_telegram_bot(config, agent_manager):
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         logger.info("Telegram bot starting...")
-        await app.run_polling()
+        # run_polling() installs signal handlers which fail in non-main threads.
+        # Use the lower-level API instead.
+        await app.initialize()
+        await app.start()
+        await app.updater.start_polling()
+        logger.info("Telegram bot polling.")
+        # Keep the coroutine alive until the event loop stops.
+        import asyncio
+        await asyncio.Event().wait()
 
     except ImportError:
         logger.warning("python-telegram-bot not installed — Telegram bot disabled.")
