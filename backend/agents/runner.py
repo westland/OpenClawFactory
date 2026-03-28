@@ -101,7 +101,8 @@ class AgentRunner:
                           f"Starting work on: {task_title}")
 
         try:
-            from interpreter import interpreter as interp
+            from interpreter import OpenInterpreter
+            interp = OpenInterpreter()   # fresh instance — no shared history
 
             interp.llm.model = f"anthropic/{self.persona.model}"
             interp.llm.api_key = self.config.anthropic_api_key
@@ -112,7 +113,6 @@ class AgentRunner:
             )
             interp.auto_run = True        # runs code without asking
             interp.verbose = False
-            interp.conversation_history = False  # don't accumulate across tasks
 
             prompt = task_title
             if task_description:
